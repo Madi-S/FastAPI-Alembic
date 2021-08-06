@@ -1,19 +1,25 @@
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String
-Base = declarative_base()
+import sqlalchemy
+from db import db, metadata, sqlalchemy
+
+users = sqlalchemy.Table(
+    'users',
+    metadata,
+    sqlalchemy.Column('id', sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column('first_name', sqlalchemy.String),
+    sqlalchemy.Column('last_name', sqlalchemy.String),
+    sqlalchemy.Column('age', sqlalchemy.Integer)
+)
 
 
-class User(Base):
-    __tablename__ = 'users'
-    id = Column(Integer, primary_key=True, index=True)
-    first_name = Column(String,)
-    last_name = Column(String)
-    age = Column(Integer)
+class User:
+    @classmethod
+    async def get(cls, id):
+        query = users.select().where(users.c.id == id)
+        user = await db.fetch_one(query)
+        return user
 
-'''
-For migrations:
-
-docker-compose run web alembic revision --autogenerate -m "First migration"
-
-docker-compose run web alembic upgrade head
-'''
+    @classmethod
+    async def create(cls, **user):
+        query = users.insert().values(**user)
+        user_id = await db.execute(query)
+        return user_id

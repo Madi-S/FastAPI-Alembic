@@ -1,31 +1,22 @@
 import uvicorn
-from fastapi import FastAPI
-#--------------- added code ------------------------#
-import os
-from fastapi_sqlalchemy import DBSessionMiddleware
-from fastapi_sqlalchemy import db
 from models import User as ModelUser
 from schema import User as SchemaUser
-from dotenv import load_dotenv
+from app import app
+from db import db
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-load_dotenv(os.path.join(BASE_DIR, ".env"))
-#---------------------------------------------------#
 
-app = FastAPI()
-#--------------- added code ------------------------#
-app.add_middleware(DBSessionMiddleware, db_url=os.environ["DATABASE_URL"])
-#---------------------------------------------------#
-#--------------- modified code ---------------------#
-@app.post("/user/", response_model=SchemaUser)
-def create_user(user: SchemaUser):
-    db_user = ModelUser(
-        first_name=user.first_name, last_name=user.last_name, age=user.age
-    )
-    db.session.add(db_user)
-    db.session.commit()
-    return db_user
-#---------------------------------------------------#
+@app.get('/user/{id}', response_model=SchemaUser)
+async def get_user(id: int):
+    user = await ModelUser.get(id)
+    return SchemaUser(**user).dict()
+    # return user
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+@app.post('/user/')
+async def create_user(user: SchemaUser):
+    user_id = await ModelUser.create(**user.dict())
+    return {'user_id': user_id}
+
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='0.0.0.0', port=8000)
