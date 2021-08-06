@@ -3,13 +3,14 @@ from models import User as ModelUser
 from schema import User as SchemaUser
 from app import app
 from db import db
-
+from fastapi import HTTPException
 
 @app.get('/user/{id}', response_model=SchemaUser)
 async def get_user(id: int):
     user = await ModelUser.get(id)
-    return SchemaUser(**user).dict()
-    # return user
+    if user:
+        return SchemaUser(**user).dict()
+    raise HTTPException(404, 'User with given id does not exist')
 
 
 @app.post('/user/')
